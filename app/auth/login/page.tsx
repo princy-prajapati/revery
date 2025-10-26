@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Palette, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
-import { AuthForm } from "@/components/auth-form"
+
 
 export default function LoginPage() {
   const router = useRouter()
@@ -55,7 +55,7 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account',
-        include_granted_scopes: true,
+
         access_type: 'offline'
       });
       await signInWithPopup(auth, provider);
@@ -68,8 +68,7 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center space-x-2">
@@ -234,7 +233,5 @@ export default function LoginPage() {
           </Card>
         </div>
       </div>
-      <AuthForm mode="login" auth={auth} />
-    </>
   )
 }

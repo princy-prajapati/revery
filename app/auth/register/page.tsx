@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,10 +41,17 @@ export default function RegisterPage() {
         alert('Passwords do not match');
         return;
       }
-      await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      // Update user profile with display name
+      if (authMode === 'traditional' && formData.firstName && formData.lastName) {
+        await updateProfile(userCredential.user, {
+          displayName: `${formData.firstName} ${formData.lastName}`
+        });
+      }
       setIsLoading(false);
       router.push('/onboarding');
     } catch (error: any) {
+      console.error(error.code, error.message);
       setIsLoading(false);
       alert(error.message || 'Registration failed');
     }
@@ -57,7 +64,7 @@ export default function RegisterPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account',
-        include_granted_scopes: true,
+        include_granted_scopes: 'true',
         access_type: 'offline'
       });
       await signInWithPopup(auth, provider);
@@ -208,8 +215,8 @@ export default function RegisterPage() {
               )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading 
-                  ? (authMode === 'open' ? "Accessing..." : "Creating account...") 
+                {isLoading
+                  ? (authMode === 'open' ? "Accessing..." : "Creating account...")
                   : (authMode === 'open' ? "Access with Email" : "Create account")
                 }
               </Button>
