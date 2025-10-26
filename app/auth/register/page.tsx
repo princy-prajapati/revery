@@ -55,6 +55,11 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account',
+        include_granted_scopes: true,
+        access_type: 'offline'
+      });
       await signInWithPopup(auth, provider);
       setIsLoading(false);
       router.push('/onboarding');

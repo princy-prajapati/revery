@@ -1,20 +1,32 @@
 "use client"
 
+import { doc, getDoc } from "firebase/firestore"
 import { useState, useEffect } from "react"
+import { onAuthStateChanged, User } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { Palette, Ghost, Sparkles, Plus, Camera, Heart, Share2, TrendingUp, Calendar, Zap, ArrowRight } from "lucide-react"
+import { Palette, Ghost, Sparkles, Plus, Camera, Heart, Share2, Zap, ArrowRight } from "lucide-react"
 import Link from "next/link"
-
 import SignOutButton from "@/components/signout-button"
+import { SetupActivator } from "@/components/setup-activator"
+import { auth, db } from "@/lib/firebase"
+
+interface UserData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  photoURL: string | null;
+  isOnboarded?: boolean; // Add this to track setup completion
+}
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [userData, setUserData] = useState<any>(null)
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true)
   const [setupCompleted, setSetupCompleted] = useState(false)
 
@@ -24,18 +36,37 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    // Set up mock user data for public access
-    const mockUser = {
-      id: 'public-user',
-      firstName: 'Fashion',
-      lastName: 'Enthusiast',
-      email: 'user@revery.com',
-      isOnboarded: true,
-      accessMode: 'public'
-    }
-    setUserData(mockUser)
-    setIsLoading(false)
-  }, [])
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is signed in.
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        const userDataPayload: UserData = {
+            id: user.uid,
+            firstName: user.displayName?.split(' ')[0] || 'User',
+            lastName: user.displayName?.split(' ')[1] || '',
+            email: user.email,
+            photoURL: user.photoURL,
+        };
+
+        if (userDoc.exists() && userDoc.data().isOnboarded) {
+            userDataPayload.isOnboarded = true;
+            setSetupCompleted(true);
+        } else {
+            userDataPayload.isOnboarded = false;
+            setSetupCompleted(false);
+        }
+        setUserData(userDataPayload);
+      } else {
+        // User is signed out, redirect to login.
+        router.push('/auth/login');
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   // Mock data for dashboard
   const mockData = {
@@ -78,6 +109,30 @@ export default function DashboardPage() {
     )
   }
 
+  if (userData && !setupCompleted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="font-serif text-2xl">Welcome to Revery, {userData?.firstName}!</CardTitle>
+            <CardDescription>
+              Let's personalize your fashion experience. Complete the setup to unlock your AI-powered dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SetupActivator onComplete={handleSetupComplete} />
+            <p className="text-xs text-muted-foreground mt-4">
+              This will help us tailor outfit suggestions to your unique style.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   if (!userData) return null
 
   return (
@@ -100,8 +155,11 @@ export default function DashboardPage() {
               <Link href="/community">
                 <Button variant="ghost">Community</Button>
               </Link>
+              <Link href="/neckline-image-manager">
+                <Button variant="ghost">Manage Neckline Images</Button>
+              </Link>
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg" />
+                <AvatarImage src={userData.photoURL || "/placeholder.svg"} />
                 <AvatarFallback>{userData.firstName?.[0]}{userData.lastName?.[0]}</AvatarFallback>
               </Avatar>
               <SignOutButton onSignOut={() => router.push('/auth/login')} />
@@ -267,11 +325,7 @@ export default function DashboardPage() {
 • Explore outfit variations
 • Track your style evolution
 
-🎯 Current Status:
-• Style: ${userData?.onboardingData?.profileAnswers?.preferredStyle || 'Not set'}
-• Items: ${userData?.onboardingData?.uploadedItems?.length || 0} uploaded
-• Dashboard: Ready to explore!
-
+🎯 Your dashboard is ready to explore!
 Click "Start Your Fashion Journey" to begin styling!
                         `
                         alert(demoInfo)

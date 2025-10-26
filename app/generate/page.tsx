@@ -1,10 +1,10 @@
 "use client"
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Palette, Sparkles, Camera, ArrowRight, Ghost, Zap, Check, X, Heart, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Palette, Sparkles, Camera, Ghost, Zap, Check, X, Heart, Share2, RefreshCw } from "lucide-react"
 import Link from "next/link";
 import { OutfitSelector } from "@/components/outfit-selector";
 
@@ -42,7 +42,12 @@ export default function GeneratePage() {
       alert('Please select at least one image to generate outfits!');
       return;
     }
-    setShowOutfitSelector(true);
+    setIsGenerating(true);
+    // Simulate AI generation time before showing selector
+    setTimeout(() => {
+      setShowOutfitSelector(true);
+      setIsGenerating(false);
+    }, 1500);
   };
 
   const handleOutfitSelect = (outfit: OutfitSuggestion) => {
@@ -195,13 +200,13 @@ export default function GeneratePage() {
             </CardContent>
           </Card>
 
-          {!showOutfitSelector ? (
+          {!showOutfitSelector && !isGenerating && (
             <div className="text-center">
               <Button 
                 size="lg" 
                 className="text-lg px-8 mb-4"
                 onClick={handleGenerate}
-                disabled={selectedImages.length === 0}
+                disabled={selectedImages.length === 0 || isGenerating}
               >
                 <Sparkles className="w-5 h-5 mr-2" />
                 Generate Outfit
@@ -233,7 +238,21 @@ export default function GeneratePage() {
                 </Link>
               </div>
             </div>
-          ) : (
+          )}
+
+          {isGenerating && (
+            <div className="text-center py-12">
+              <div className="flex items-center justify-center space-x-3">
+                <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+                <div>
+                  <p className="text-xl font-semibold">Generating your outfits...</p>
+                  <p className="text-muted-foreground">Our AI is working its magic!</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showOutfitSelector && !isGenerating && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Choose Your Perfect Outfit</h2>
